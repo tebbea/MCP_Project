@@ -22,10 +22,10 @@
 % Version: 15.08.2024
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [clusterthreshold, clustersize, no_of_clusters, max_t_values, min_t_values] = LB3_permute_clusters(no_draws, cube_coords, mat1t, mat2t, threshold, teststat, percentage)
+function [clusterthreshold_pos, clusterthreshold_neg, clustersize_pos, clustersize_neg, no_of_clusters, max_t_values, min_t_values] = LB3_permute_clusters(no_draws, cube_coords, mat1t, mat2t, threshold, teststat, percentage)
 
 % mat1t --> cond 1
-% mat2t --> cond2 --> jeweils (tp, elec, subj)
+% mat2t --> cond2 --> each (tp, elec, subj)
 
     %%% run permutation and find actual cluster perm with perm. data
     mat4permt = cat(4, mat1t, mat2t); % size 4D: tp, elec, subj, 2)
@@ -45,7 +45,7 @@ function [clusterthreshold, clustersize, no_of_clusters, max_t_values, min_t_val
         t_values_in=t_values_in';   % flip for LB_findclusters_cbp
         
          % this runs through LB3_findclusters_cbp (no_draws) times and finds clusters in time & space
-        [cluster_out_pos, cluster_out_neg] = LB3_findclusters_cbp(t_values_in, cube_coords, threshold, teststat, []);
+        [cluster_out_pos, cluster_out_neg] = LB3_findclusters_cbp(t_values_in, cube_coords, threshold, teststat, 1);
 
         % if no cluster is found (empty), then enter 0? oder leave empty??
         % also for negative clusters?
@@ -71,11 +71,18 @@ function [clusterthreshold, clustersize, no_of_clusters, max_t_values, min_t_val
         
 
         if isempty(cluster_out_pos.no)
-            clustersize(draw)= 0;
+            clustersize_pos(draw)= 0;
         else
-            clustersize(draw)=sum(cluster_out_pos.no);          
+            clustersize_pos(draw)=sum(cluster_out_pos.no);          
         end
        
+        if isempty(cluster_out_neg.no)
+            clustersize_neg(draw)= 0;
+        else
+            clustersize_neg(draw)=sum(cluster_out_neg.no);          
+        end
+       
+
         if round(draw./100) == draw./100, fprintf('.'), end % make progress dots
         % max_t_values gives you maximum t-value of sum of clusters
 
@@ -85,7 +92,8 @@ function [clusterthreshold, clustersize, no_of_clusters, max_t_values, min_t_val
     % hist(min_t_values,50)
 
     % quantiles for threshold
-    clusterthreshold = quantile(max_t_values,percentage);
+    clusterthreshold_pos = quantile(max_t_values,percentage);
+    clusterthreshold_neg = quantile(min_t_values,(1-percentage));
 
 end % function
 
